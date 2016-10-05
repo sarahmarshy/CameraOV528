@@ -117,7 +117,6 @@ void CameraOV528::powerup()
         return;
     }
 
-    _serial.attach(this, &CameraOV528::_error_irq, SerialBase::ErIrq);
     _serial.attach(this, &CameraOV528::_rx_irq, SerialBase::RxIrq);
 
     // Attempt to connect at the desired baud
@@ -171,7 +170,6 @@ void CameraOV528::powerdown()
     picture_buffer_pos = 0;
     picture_buffer_size = 0;
 
-    _serial.attach(NULL, SerialBase::ErIrq);
     _serial.attach(NULL, SerialBase::RxIrq);
     _flush_rx();
 
@@ -375,11 +373,6 @@ void CameraOV528::_send_ack(uint8_t p1, uint8_t p2, uint8_t p3, uint8_t p4)
     cmd.param[2] = p3;
     cmd.param[3] = p4;
     _send((uint8_t*)&cmd, COMMAND_LENGTH);
-}
-
-void CameraOV528::_error_irq()
-{
-    error("Uart overrun");
 }
 
 void CameraOV528::_rx_irq(void)

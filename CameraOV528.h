@@ -69,7 +69,6 @@ private:
     void _set_fmt_and_res(Format fmt, Resolution res);
     void _read_picture_block();
 
-    void _error_irq(void);
     void _rx_irq(void);
 
     bool _send(const uint8_t *data, uint32_t size, uint32_t timeout_ms=500);
