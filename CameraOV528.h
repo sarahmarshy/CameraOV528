@@ -33,18 +33,18 @@ class CameraOV528 : public Camera {
 
 public:
     enum Resolution {
-        RES_80x60       = 0x01,
+//        RES_80x60       = 0x01,   // Does not work
         RES_160x120     = 0x03,
         RES_320x240     = 0x05,
         RES_640x480     = 0x07,
     };
 
     enum Format {
-        FMT_2_BIT_GRAY_SCALE = 1,
-        FMT_4_BIT_GRAY_SCALE = 2,
-        FMT_8_BIT_GRAY_SCALE = 3,
-        FMT_2_BIT_COLOR = 5,
-        FMT_16_BIT = 6,
+//        FMT_2_BIT_GRAY_SCALE = 1, //Does not work
+//        FMT_4_BIT_GRAY_SCALE = 2,
+//        FMT_8_BIT_GRAY_SCALE = 3,
+//        FMT_2_BIT_COLOR = 5,
+//        FMT_16_BIT = 6,
         FMT_JPEG = 7,
     };
 

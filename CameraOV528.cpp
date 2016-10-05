@@ -62,18 +62,18 @@ typedef struct {
 } camera_command_t;
 
 CameraOV528::Resolution supported_resolutions[] = {
-    CameraOV528::RES_80x60,
+//    CameraOV528::RES_80x60,             //Does not work
     CameraOV528::RES_160x120,
     CameraOV528::RES_320x240,
     CameraOV528::RES_640x480,
 };
 
 CameraOV528::Format supported_formats[] = {
-    CameraOV528::FMT_2_BIT_GRAY_SCALE,
-    CameraOV528::FMT_4_BIT_GRAY_SCALE,
-    CameraOV528::FMT_8_BIT_GRAY_SCALE,
-    CameraOV528::FMT_2_BIT_COLOR,
-    CameraOV528::FMT_16_BIT,
+//    CameraOV528::FMT_2_BIT_GRAY_SCALE,  //Does not work
+//    CameraOV528::FMT_4_BIT_GRAY_SCALE,
+//    CameraOV528::FMT_8_BIT_GRAY_SCALE,
+//    CameraOV528::FMT_2_BIT_COLOR,
+//    CameraOV528::FMT_16_BIT,
     CameraOV528::FMT_JPEG,
 };
 
