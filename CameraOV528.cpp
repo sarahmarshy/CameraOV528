@@ -81,11 +81,6 @@ static uint32_t divide_round_up(uint32_t dividen, uint32_t divisor);
 static uint32_t min(uint32_t value1, uint32_t value2);
 static uint32_t queue_used(uint32_t head, uint32_t tail, uint32_t size);
 
-int camera_error(const char* message){
-    debug(message);
-    return -1;
-}
-
 CameraOV528::CameraOV528(PinName rx, PinName tx) : _serial(rx, tx), _read_sem(0)
 {
     _init_done = false;
@@ -109,11 +104,23 @@ CameraOV528::CameraOV528(PinName rx, PinName tx) : _serial(rx, tx), _read_sem(0)
     _read_buf_head = 0;
     _read_buf_tail = 0;
     _read_wake_pos = READ_WAKE_POS_INVALID;
+    this->log_func = debug;
 }
 
 CameraOV528::~CameraOV528()
 {
     powerdown();
+}
+
+void CameraOV528::attach_debug_function(void (*func)(const char* fmt, ...))
+{
+    this->log_func = func;
+}
+
+int CameraOV528::camera_error(const char* message)
+{
+    log_func("%s\r\n",message);
+    return -1;
 }
 
 int CameraOV528::powerup()

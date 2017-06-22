@@ -61,6 +61,9 @@ public:
     void set_format(Format format);
     void set_baud(uint32_t baud);
 
+    void attach_debug_function(void (*func)(const char* fmt, ...));
+    int camera_error(const char* message);
+
 private:
 
     bool _init_sequence();
@@ -102,6 +105,8 @@ private:
     uint32_t _read_buf_tail;
     uint32_t _read_wake_pos;
     Semaphore _read_sem;
+
+    void (*log_func)(const char* fmt, ...);
 };
 
 #endif
