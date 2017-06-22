@@ -22,9 +22,9 @@ class Camera {
 public:
     Camera(void) {};
     virtual ~Camera(void) {};
-    virtual void powerup(void) = 0;
-    virtual void powerdown(void) = 0;
-    virtual void take_picture(void) = 0;
+    virtual int powerup(void) = 0;
+    virtual int powerdown(void) = 0;
+    virtual int take_picture(void) = 0;
     virtual uint32_t get_picture_size(void) = 0;
     virtual uint32_t read_picture_data(uint8_t *data, uint32_t size) = 0;
 };
@@ -50,10 +50,10 @@ public:
 
     CameraOV528(PinName rx, PinName tx);
     virtual ~CameraOV528(void);
-    virtual void powerup(void);
-    virtual void powerup(uint32_t baud);
-    virtual void powerdown(void);
-    virtual void take_picture(void);
+    virtual int powerup(void);
+    virtual int powerup(uint32_t baud);
+    virtual int powerdown(void);
+    virtual int take_picture(void);
     virtual uint32_t get_picture_size(void);
     virtual uint32_t read_picture_data(uint8_t *data, uint32_t size);
 
@@ -67,7 +67,7 @@ private:
     void _set_baud(uint32_t baud);
     void _set_package_size(uint32_t size);
     void _set_fmt_and_res(Format fmt, Resolution res);
-    void _read_picture_block();
+    int _read_picture_block();
 
     void _rx_irq(void);
 

@@ -81,6 +81,11 @@ static uint32_t divide_round_up(uint32_t dividen, uint32_t divisor);
 static uint32_t min(uint32_t value1, uint32_t value2);
 static uint32_t queue_used(uint32_t head, uint32_t tail, uint32_t size);
 
+int camera_error(const char* message){
+    debug(message);
+    return -1;
+}
+
 CameraOV528::CameraOV528(PinName rx, PinName tx) : _serial(rx, tx), _read_sem(0)
 {
     _init_done = false;
@@ -111,10 +116,10 @@ CameraOV528::~CameraOV528()
     powerdown();
 }
 
-void CameraOV528::powerup()
+int CameraOV528::powerup()
 {
     if (_init_done) {
-        return;
+        return 0;
     }
 
     _serial.attach(this, &CameraOV528::_rx_irq, SerialBase::RxIrq);
@@ -130,7 +135,7 @@ void CameraOV528::powerup()
     }
 
     if (!success) {
-        error("Unable to communicate with camera");
+        return camera_error("Unable to communicate with camera");
     }
 
     // Acknowledge the SYNC read in _init_sequence with an ACK
@@ -143,22 +148,23 @@ void CameraOV528::powerup()
     _set_package_size(picture_buffer_size_limit);
 
     _init_done = false;
+    return 0;
 }
 
-void CameraOV528::powerup(uint32_t baud)
+int CameraOV528::powerup(uint32_t baud)
 {
     _baud = baud;
-    powerup();
+    return powerup();
 }
 
-void CameraOV528::powerdown()
+int CameraOV528::powerdown()
 {
     if (!_init_done) {
-        return;
+        return 0;
     }
 
     if (!_send_cmd(POWER_DOWN, 0)) {
-        error("Powerdown failed");
+        return camera_error("Powerdown failed");
     }
 
     // Reset picture transfer variables
@@ -174,9 +180,10 @@ void CameraOV528::powerdown()
     _flush_rx();
 
     _init_done = false;
+    return 0;
 }
 
-void CameraOV528::take_picture(void)
+int CameraOV528::take_picture(void)
 {
     // Ensure driver is powered up
     powerup();
@@ -191,29 +198,30 @@ void CameraOV528::take_picture(void)
     // Take snapshot
     camera_printf("Taking snapshot\r\n");
     if (!_send_cmd(SNAPSHOT, 0)) {
-        error("Take snapshot failed");
+        return camera_error("Take snapshot failed");
     }
 
     // Start picture transfer
     camera_printf("Starting transfer\r\n");
     const GetSetting request = GET_JPEG_PREVIEW_PICTURE;
     if (!_send_cmd(GET_PICTURE, request)) {
-        error("Get picture command failed");
+        return camera_error("Get picture command failed");
     }
     camera_command_t resp = {0};
     uint32_t size_read = _read((uint8_t*)&resp, COMMAND_LENGTH, 1000);
     if (size_read != COMMAND_LENGTH) {
-        error("Get picture response invalid");
+        return camera_error("Get picture response invalid");
     }
-    if (resp.header != 0xAA)  error("Get picture response invalid sync");
-    if (resp.command != DATA)  error("Get picture response invalid data");
-    if (resp.param[0] != request)  error("Get picture response invalid content");
+    if (resp.header != 0xAA)  camera_error("Get picture response invalid sync");
+    if (resp.command != DATA)  camera_error("Get picture response invalid data");
+    if (resp.param[0] != request)  camera_error("Get picture response invalid content");
     picture_length = (resp.param[1] << 0) |
              (resp.param[2] << 8) |
              (resp.param[3] << 16);
     picture_data_id = 0;
     uint32_t payload_length = picture_buffer_size_limit - PIC_PAYLOAD_OVERHEAD;
     picture_data_id_count = divide_round_up(picture_length, payload_length);
+    return 0;
 }
 
 uint32_t CameraOV528::get_picture_size()
@@ -260,7 +268,7 @@ void CameraOV528::set_resolution(CameraOV528::Resolution resolution)
     }
 
     if (!valid_resolution) {
-        error("Invalid resolution");
+        camera_error("Invalid resolution");
     }
 
     _resolution = resolution;
@@ -279,7 +287,7 @@ void CameraOV528::set_format(CameraOV528::Format format)
     }
 
     if (!valid_format) {
-        error("Invalid format");
+        camera_error("Invalid format");
     }
 
     _format = format;
@@ -293,7 +301,7 @@ void CameraOV528::_set_baud(uint32_t baud)
     // Assert no rounding errors
     MBED_ASSERT(PIC_CLOCK_HZ / ( 2 * (div2 + 1) ) / ( 2 * (div1 + 1)) == _baud);
     if (!_send_cmd(SET_BAUD_RATE, div1, div2)) {
-        error("_set_baud failed");
+        camera_error("_set_baud failed");
     }
     _serial.baud(_baud);
 }
@@ -304,23 +312,23 @@ void CameraOV528::_set_package_size(uint32_t size)
     uint8_t size_low = (size >> 0) & 0xff;
     uint8_t size_high = (size >> 8) & 0xff;
     if (!_send_cmd(SET_PACKAGE_SIZE, 0x08, size_low, size_high, 0)) {
-        error("_set_package_size failed");
+        camera_error("_set_package_size failed");
     }
 }
 
 void CameraOV528::_set_fmt_and_res(Format fmt, Resolution res)
 {
     if (!_send_cmd(INITIAL, 0x00, _format, 0x00, _resolution)) {
-        error("_set_fmt_and_res failed");
+        camera_error("_set_fmt_and_res failed");
     }
 }
 
-void CameraOV528::_read_picture_block()
+int CameraOV528::_read_picture_block()
 {
     const uint32_t payload_length = picture_buffer_size_limit - PIC_PAYLOAD_OVERHEAD;
     if (picture_data_id >= picture_data_id_count) {
         // Transfer complete
-        return;
+        return 0;
     }
 
     // Send an ACK to indicate that the next block id should be sent
@@ -334,7 +342,7 @@ void CameraOV528::_read_picture_block()
     uint32_t size_to_read = min(size_left, payload_length) + PIC_PAYLOAD_OVERHEAD;
     uint32_t size_read = _read(picture_buffer, size_to_read);
     if (size_read != size_to_read) {
-        error("Image data protocol error");
+        return camera_error("Image data protocol error");
     }
 
     // Validate checksum
@@ -343,7 +351,7 @@ void CameraOV528::_read_picture_block()
         checksum += picture_buffer[i];
     }
     if (picture_buffer[size_read - 2] != checksum) {
-        error("Image data checksum failure");
+        return camera_error("Image data checksum failure");
     }
 
     // Update buffer information
@@ -361,6 +369,7 @@ void CameraOV528::_read_picture_block()
                   picture_length - payload_length * picture_data_id +
                   PIC_PAYLOAD_OVERHEAD - size_read);
     picture_data_id++;
+    return 0;
 }
 
 void CameraOV528::_send_ack(uint8_t p1, uint8_t p2, uint8_t p3, uint8_t p4)
@@ -381,7 +390,7 @@ void CameraOV528::_rx_irq(void)
 
         // Check for overflow
         if (_read_buf_head + 1 == _read_buf_tail) {
-            error("RX buffer overflow");
+            camera_error("RX buffer overflow");
         }
 
         // Add data
